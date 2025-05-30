@@ -312,22 +312,44 @@ func (n *Network) getMessageEventParams(m Message) map[string]interface{} {
 		params["type"] = "MsgApp"
 		params["log_term"] = m.ParsedMessage["prev_log_term"]
 		entries := make([]entry, 0)
-		for _, eI := range m.ParsedMessage["entries"].([]interface{}) {
-			e := eI.(map[string]interface{})
-			data := e["data"].(string)
-			if data == "" {
-				continue
-			}
-			eTermI, ok := e["term"]
-			if !ok {
-				continue
-			}
 
-			entries = append(entries, entry{
-				Term: int(eTermI.(float64)),
-				Data: strconv.Itoa(n.getRequestNumber(data)),
-			})
+		switch es := m.ParsedMessage["entries"].(type) {
+		case map[string]interface{}:
+			for _, eI := range es {
+				e := eI.(map[string]interface{})
+				data := e["data"].(string)
+				if data == "" {
+					continue
+				}
+				eTermI, ok := e["term"]
+				if !ok {
+					continue
+				}
+
+				entries = append(entries, entry{
+					Term: int(eTermI.(float64)),
+					Data: strconv.Itoa(n.getRequestNumber(data)),
+				})
+			}
+		case []interface{}:
+			for _, eI := range es {
+				e := eI.(map[string]interface{})
+				data := e["data"].(string)
+				if data == "" {
+					continue
+				}
+				eTermI, ok := e["term"]
+				if !ok {
+					continue
+				}
+
+				entries = append(entries, entry{
+					Term: int(eTermI.(float64)),
+					Data: strconv.Itoa(n.getRequestNumber(data)),
+				})
+			}
 		}
+
 		params["entries"] = entries
 		params["index"] = m.ParsedMessage["prev_log_idx"]
 		if m.ParsedMessage["prev_log_idx"] == nil {
